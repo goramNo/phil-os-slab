@@ -1,11 +1,20 @@
-#![no_std]
-
+use core::cell::UnsafeCell;
 use core::ptr::null_mut;
 
 #[derive(Clone, Copy)]
 struct FreeNode {
     next: *mut FreeNode,
 }
+
+struct Page {
+    data: UnsafeCell<[u8; 4096]>,
+}
+
+unsafe impl Sync for Page {}
+
+static PAGE: Page = Page {
+    data: UnsafeCell::new([0; 4096]),
+};
 
 pub struct SlabCache {
     size: usize,
@@ -41,11 +50,11 @@ impl SlabCache {
     }
 
     unsafe fn refill(&mut self) {
-        static mut PAGE: [u8; 4096] = [0; 4096];
+        let base = (*PAGE.data.get()).as_ptr() as *mut u8;
 
         let mut offset = 0;
         while offset + self.size <= 4096 {
-            let node = PAGE.as_mut_ptr().add(offset) as *mut FreeNode;
+            let node = base.add(offset) as *mut FreeNode;
             (*node).next = self.free_list;
             self.free_list = node;
             offset += self.size;
