@@ -1,4 +1,3 @@
-```
 # Phil-OS — Slab Allocator (Rust, x86_64, QEMU)
 
 ![Rust](https://img.shields.io/badge/Rust-no__std-orange)
@@ -10,22 +9,22 @@
 
 ---
 
-##  Sommaire
+## Sommaire
 
-- [Contexte & Objectifs](#-contexte--objectifs)
-- [Slab allocator : c’est quoi ?](#-slab-allocator--cest-quoi-)
-- [Comparaison avec d’autres allocateurs](#-comparaison-avec-dautres-allocateurs)
-- [Le slab allocator dans Linux](#-le-slab-allocator-dans-linux)
-- [Implémentation dans Phil-OS](#-implémentation-dans-phil-os)
-- [Arborescence du projet](#-arborescence-du-projet)
-- [Tests & Validation](#-tests--validation)
-- [Limitations connues](#️-limitations-connues)
-- [Bonus FAT32](#-bonus-fat32)
-- [Références](#-références)
+- [Contexte & Objectifs](#contexte--objectifs)
+- [Slab allocator : c’est quoi ?](#slab-allocator--cest-quoi)
+- [Comparaison avec d’autres allocateurs](#comparaison-avec-dautres-allocateurs)
+- [Le slab allocator dans Linux](#le-slab-allocator-dans-linux)
+- [Implémentation dans Phil-OS](#implémentation-dans-phil-os)
+- [Arborescence du projet](#arborescence-du-projet)
+- [Tests & Validation](#tests--validation)
+- [Limitations connues](#limitations-connues)
+- [Bonus FAT32](#bonus-fat32)
+- [Références](#références)
 
 ---
 
-##  Contexte & Objectifs
+## Contexte & Objectifs
 
 Ce projet répond à une consigne de cours systèmes consistant à :
 
@@ -39,22 +38,22 @@ L’objectif n’est pas de reproduire l’implémentation Linux à l’identiqu
 
 ---
 
-##  Slab allocator : c’est quoi ?
+## Slab allocator : c’est quoi ?
 
 Un **slab allocator** est un allocateur mémoire conçu pour gérer efficacement des **objets de taille fixe**, très fréquents dans un noyau (structures internes, buffers, descripteurs, etc.).
 
 ### Objectifs principaux
 
--  **Performance** : allocation et libération rapides
--  **Faible fragmentation** : tailles fixes, regroupées
--  **Réutilisation** : un objet libéré est immédiatement réutilisable
--  **Localité cache CPU** : objets proches en mémoire
+- **Performance** : allocation et libération rapides  
+- **Faible fragmentation** : tailles fixes, regroupées  
+- **Réutilisation** : un objet libéré est immédiatement réutilisable  
+- **Localité cache CPU** : objets proches en mémoire  
 
- Contrairement à `malloc`, un slab allocator **ne gère pas des tailles arbitraires**, mais des **classes de tailles**.
+Contrairement à `malloc`, un slab allocator **ne gère pas des tailles arbitraires**, mais des **classes de tailles**.
 
 ---
 
-##  Comparaison avec d’autres allocateurs
+## Comparaison avec d’autres allocateurs
 
 | Allocateur | Granularité | Avantages | Inconvénients |
 |----------|------------|-----------|---------------|
@@ -66,39 +65,39 @@ Un **slab allocator** est un allocateur mémoire conçu pour gérer efficacement
 
 ---
 
-##  Le slab allocator dans Linux
+## Le slab allocator dans Linux
 
 Linux propose trois implémentations principales :
 
 ### SLAB
-- Implémentation historique
-- Caches riches, constructeur/destructeur
-- Complexité élevée
+- Implémentation historique  
+- Caches riches, constructeur/destructeur  
+- Complexité élevée  
 
 ### SLUB (actuelle par défaut)
-- Simplification du modèle
-- Freelist stockée directement dans les objets
-- Meilleure scalabilité SMP
+- Simplification du modèle  
+- Freelist stockée directement dans les objets  
+- Meilleure scalabilité SMP  
 
 ### SLOB
-- Implémentation minimaliste
-- Destinée aux systèmes embarqués
-- Performances limitées
+- Implémentation minimaliste  
+- Destinée aux systèmes embarqués  
+- Performances limitées  
 
- Ce projet s’inspire **conceptuellement** du modèle SLUB (freelist simple, peu de métadonnées).
+ Ce projet s’inspire **conceptuellement** du modèle SLUB, en retirant volontairement les mécanismes avancés afin de conserver une implémentation lisible et pédagogique.
 
 ---
 
 ### Notions clés
 
-- **Cache** : gère une classe d’objets d’une taille donnée
-- **Slab** : zone mémoire découpée en objets identiques
-- **Object** : unité allouée
-- **Freelist** : liste chaînée des objets libres
+- **Cache** : gère une classe d’objets d’une taille donnée  
+- **Slab** : zone mémoire découpée en objets identiques  
+- **Object** : unité allouée  
+- **Freelist** : liste chaînée des objets libres  
 
 ---
 
-## 🛠 Implémentation dans Phil-OS
+## Implémentation dans Phil-OS
 
 L’implémentation se trouve dans le module :
 
@@ -170,7 +169,7 @@ pub struct SlabAllocator {
 }
 ```
 
-Caches supportés (classes de tailles fixes) :
+Caches supportés :
 
 ```
 8, 16, 32, 64, 128, 256, 512, 1024 octets
@@ -195,14 +194,11 @@ pub unsafe fn alloc(&mut self, size: usize) -> *mut u8
 
 #### Libération (`dealloc`)
 
-1. Le pointeur est casté en `FreeNode`
-2. Réinsertion en tête de freelist
-
 ```rust
 pub unsafe fn dealloc(&mut self, ptr: *mut u8, size: usize)
 ```
 
- Le choix du cache repose sur la taille fournie par l’appelant.
+Le choix du cache repose sur la taille fournie par l’appelant.
 
 ---
 
@@ -215,11 +211,9 @@ unsafe fn refill(&mut self)
 * Découpe la page de 4096 octets en objets de taille `self.size`
 * Chaîne chaque objet dans la freelist
 
- C’est l’équivalent pédagogique de l’allocation d’un *slab*.
-
 ---
 
-##  Arborescence du projet
+## Arborescence du projet
 
 ```
 src/
@@ -232,9 +226,9 @@ src/
 
 ---
 
-##  Tests & Validation
+## Tests & Validation
 
-Les tests sont définis dans :
+Tests définis dans :
 
 ```
 src/kernel/memory/slab_test.rs
@@ -243,36 +237,18 @@ src/kernel/memory/slab_test.rs
 ### Test : réutilisation des objets
 
 ```rust
-#[test]
-fn slab_alloc_free_reuse() {
-    let mut slab = SlabAllocator::new();
-
-    unsafe {
-        let p1 = slab.alloc(32);
-        assert!(!p1.is_null());
-
-        slab.dealloc(p1, 32);
-
-        let p2 = slab.alloc(32);
-        assert!(!p2.is_null());
-
-        assert_eq!(p1, p2);
-    }
-}
+assert_eq!(p1, p2);
 ```
 
  **Validation démontrée**
 
 * Allocation correcte
 * Libération correcte
-* **Réutilisation du même bloc mémoire**
-* Freelist fonctionnelle
-
- Ce test prouve le principe fondamental du slab allocator : *un objet libéré est réutilisé*.
+* Réutilisation du même bloc mémoire
 
 ---
 
-##  Limitations connues
+## Limitations connues
 
 * Une seule page mémoire partagée
 * Pas de per-CPU caches
@@ -280,15 +256,11 @@ fn slab_alloc_free_reuse() {
 * Pas de vérification de double free
 * Le choix du cache repose sur la taille fournie manuellement
 
- Ces limitations sont cohérentes avec un **prototype pédagogique**.
-
 ---
 
-##  Bonus FAT32
+## Bonus FAT32
 
  **Non implémenté dans ce dépôt**
-
- La structure du projet permettrait une intégration future d’un filesystem (FAT32, ext2, etc.) utilisant le slab allocator pour gérer ses structures internes.
 
 ---
 
@@ -306,10 +278,3 @@ fn slab_alloc_free_reuse() {
 
 Projet réalisé dans le cadre d’un **cours systèmes / OS**,
 implémenté en Rust pour architecture **x86_64**, exécutable sous **QEMU**.
-
----
-
-**Note finale pour la correction**
-Le projet démontre une compréhension claire du modèle *slab allocator*, de ses objectifs et de son intégration dans un noyau, via une implémentation simple mais fonctionnelle et testée.
-
-```
